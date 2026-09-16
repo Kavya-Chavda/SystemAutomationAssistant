@@ -13,6 +13,18 @@ class OllamaClient:
         self.host = host.rstrip('/')
         self.model = model
         self.api_url = f"{self.host}/api/generate"
+        self.tags_url = f"{self.host}/api/tags"
+
+    def get_available_models(self) -> List[str]:
+        """Queries the Ollama instance for a list of available models."""
+        try:
+            response = requests.get(self.tags_url, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            return [m.get("name") for m in data.get("models", []) if m.get("name")]
+        except Exception as e:
+            logger.error(f"Failed to fetch available models from {self.tags_url}: {e}")
+            return []
 
     def generate(self, prompt: str, system: Optional[str] = None, force_json: bool = True) -> Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]:
         """

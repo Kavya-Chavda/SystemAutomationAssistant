@@ -134,9 +134,9 @@ class Sidebar(QFrame):
         self.status_card = StatusCard()
         layout.addWidget(self.status_card)
 
-        actions_panel = QFrame()
-        actions_panel.setObjectName("panel")
-        actions_layout = QVBoxLayout(actions_panel)
+        self.actions_panel = QFrame()
+        self.actions_panel.setObjectName("panel")
+        actions_layout = QVBoxLayout(self.actions_panel)
         actions_layout.setContentsMargins(14, 14, 14, 14)
         actions_layout.setSpacing(8)
 
@@ -156,7 +156,7 @@ class Sidebar(QFrame):
         self.scroll.setWidget(self.list_container)
         actions_layout.addWidget(self.scroll)
 
-        layout.addWidget(actions_panel, 1)
+        layout.addWidget(self.actions_panel, 1)
 
     def add_action(self, summary: dict):
         item = ActionItem(summary)

@@ -17,11 +17,17 @@ class Executor:
     Executes automation actions based on parsed JSON commands dynamically 
     using the ToolRegistry.
     """
-    def __init__(self, registry: ToolRegistry, state_manager: 'ApplicationStateManager' = None, context_manager: 'ContextManager' = None, reference_resolver: 'ReferenceResolver' = None):
+    def __init__(self, registry: ToolRegistry, state_manager: 'ApplicationStateManager' = None, context_manager: 'ContextManager' = None, reference_resolver: 'ReferenceResolver' = None, settings_manager=None):
         self.registry = registry
         self.state_manager = state_manager
         self.context_manager = context_manager
         self.reference_resolver = reference_resolver
+        self.settings = settings_manager
+        self.on_step_start = None
+        self.confirmation_callback = None
+
+    def set_confirmation_callback(self, callback):
+        self.confirmation_callback = callback
 
     def _sync_active_apps(self) -> None:
         if self.state_manager and self.context_manager:
@@ -39,9 +45,12 @@ class Executor:
 
         return self._execute_single(command_json)
 
-    def _execute_single(self, command_json: Dict[str, Any]) -> Dict[str, Any]:
+    def _execute_single(self, command_json: Dict[str, Any], is_part_of_queue: bool = False) -> Dict[str, Any]:
         action = command_json.get("action")
         parameters = command_json.get("parameters", {})
+        
+        if not is_part_of_queue and self.on_step_start:
+            self.on_step_start(self._get_action_description(command_json))
 
         if not action or action == "unknown":
             return {
@@ -99,7 +108,7 @@ class Executor:
                             self.context_manager.save()
                             
                             # Recursively execute
-                            return self._execute_single(reconstructed_cmd)
+                            return self._execute_single(reconstructed_cmd, is_part_of_queue=is_part_of_queue)
                         else:
                             return {"status": "failed", "message": f"Invalid selection.\nPlease choose a number between 1 and {len(matches)}."}
                 return {"status": "failed", "message": "No pending disambiguation state found."}
@@ -228,6 +237,42 @@ class Executor:
                 return {"status": "failed", "message": "Custom filesystem locations are not supported yet. All files and folders are created inside automation_workspace."}
                     
             # State-Aware Validation Intercepts
+            
+            # --- START CONFIRMATION INTERCEPTS ---
+            requires_confirmation = False
+            confirm_title = "Confirm Action"
+            confirm_msg = "Are you sure you want to proceed?"
+            
+            is_manual_mode = self.settings and self.settings.get("automation", "execution_mode") == "manual"
+            
+            if is_manual_mode:
+                requires_confirmation = True
+                confirm_title = "Manual Execution Mode"
+                confirm_msg = f"Allow execution of: {action}?"
+            elif self.settings:
+                if action == "delete_item" and self.settings.get("automation", "confirm_delete"):
+                    requires_confirmation = True
+                    confirm_title = "Confirm Delete"
+                    item = parameters.get("item_name", "this item")
+                    confirm_msg = f"Are you sure you want to delete '{item}'?"
+                elif action in ["shutdown_pc", "restart_pc"] and self.settings.get("automation", "confirm_shutdown_restart"):
+                    requires_confirmation = True
+                    confirm_title = "Confirm Power Action"
+                    confirm_msg = f"Are you sure you want to {action.split('_')[0]} the PC?"
+                # Bulk file operations - copy_file/move_file are mostly single files right now, 
+                # but if we add bulk in future we can intercept here.
+                    
+            if requires_confirmation and self.confirmation_callback:
+                # Pause and wait for GUI to return a boolean
+                approved = self.confirmation_callback(confirm_title, confirm_msg)
+                if not approved:
+                    return {
+                        "status": "cancelled",
+                        "title": "Action Cancelled",
+                        "message": "The action was cancelled by the user."
+                    }
+            # --- END CONFIRMATION INTERCEPTS ---
+            
             if action == "open_application":
                 app_name = parameters.get("application_name")
                 if self.state_manager and app_name:
@@ -596,7 +641,10 @@ class Executor:
             
             logger.info(f"Queue step {i}/{total_steps}: {desc}")
             
-            result = self._execute_single(cmd)
+            if self.on_step_start:
+                self.on_step_start(desc)
+            
+            result = self._execute_single(cmd, is_part_of_queue=True)
             
             is_success = result.get("status") in ["success", "completed", "partial_success", "info", "interactive"]
             

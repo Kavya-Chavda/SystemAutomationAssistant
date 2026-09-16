@@ -1,0 +1,28 @@
+{
+    "version": 1,
+    "ai": {
+        "provider": "ollama",
+        "model": "gemma3:4b"
+    },
+    "voice": {
+        "enabled": true,
+        "microphone": "default",
+        "speech_recognition": "faster_whisper",
+        "language": "en",
+        "wake_word_enabled": false,
+        "wake_word": "Hey Assistant"
+    },
+    "automation": {
+        "confirm_delete": true,
+        "confirm_shutdown_restart": true,
+        "confirm_bulk_file_operations": true,
+        "execution_mode": "automatic",
+        "command_timeout": 30
+    },
+    "interface": {
+        "show_system_status": true,
+        "show_recent_actions": true,
+        "launch_minimized": false,
+        "start_with_windows": false
+    }
+}

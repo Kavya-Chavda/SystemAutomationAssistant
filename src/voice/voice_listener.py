@@ -17,7 +17,7 @@ class VoiceListener:
     def stop(self):
         self._stop_event = True
         
-    def listen(self, silence_threshold: float = 0.01, silence_duration: float = 1.5, manual_stop_only: bool = False) -> dict:
+    def listen(self, silence_threshold: float = 0.01, silence_duration: float = 1.5, manual_stop_only: bool = False, device=None) -> dict:
         """
         Listens to the microphone using an energy-based silence detector.
         Returns a dict containing transcript and metadata: {transcript, duration, model, device}
@@ -39,8 +39,9 @@ class VoiceListener:
         
         self._stop_event = False
         try:
+            device_kwarg = int(device) if device and device != "default" else None
             with sd.InputStream(samplerate=self.sample_rate, blocksize=8000, dtype='float32',
-                                   channels=1, callback=callback):
+                                   channels=1, callback=callback, device=device_kwarg):
                 while True:
                     if self._stop_event:
                         logger.info("VoiceListener stopped manually.")

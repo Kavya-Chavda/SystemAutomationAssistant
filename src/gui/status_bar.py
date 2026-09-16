@@ -4,7 +4,7 @@ from .theme import TEXT_SECONDARY, SUCCESS
 
 
 class BottomStatusBar(QFrame):
-    def __init__(self, model_name: str = "llama3.1", parent=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("statusBar")
         self.setFixedHeight(30)
@@ -15,11 +15,11 @@ class BottomStatusBar(QFrame):
         self.time_label = QLabel()
         self.time_label.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px;")
 
-        self.model_label = QLabel(f"Model: {model_name}")
+        self.model_label = QLabel("Model: Unknown")
         self.model_label.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px;")
 
-        self.ready_label = QLabel("● Ready")
-        self.ready_label.setStyleSheet(f"color: {SUCCESS}; font-size: 11px;")
+        self.ready_label = QLabel("● Checking...")
+        self.ready_label.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px;")
 
         layout.addWidget(self.time_label)
         layout.addStretch(1)
@@ -32,7 +32,11 @@ class BottomStatusBar(QFrame):
         self._timer.start(1000)
         self._update_time()
 
-    def set_state(self, text: str, color: str):
+    def set_model(self, model_name: str):
+        self.model_label.setText(f"Model: {model_name}")
+
+    def update_model_status(self, model_name: str, text: str, color: str):
+        self.model_label.setText(f"Model: {model_name}")
         self.ready_label.setText(f"● {text}")
         self.ready_label.setStyleSheet(f"color: {color}; font-size: 11px;")
 

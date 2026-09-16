@@ -1,5 +1,9 @@
 # 🚀 System Automation Assistant
 
+<div align="center">
+  <img src="assets/app_icon.png" width="128" height="128" alt="System Automation Assistant Logo" />
+</div>
+
 > An AI-powered Windows desktop automation assistant that understands natural language, maintains conversational context, and performs real operating system tasks using a hybrid deterministic + AI architecture.
 
 <div align="center">
